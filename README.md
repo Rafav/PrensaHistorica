@@ -1,6 +1,6 @@
 # Prensa Histórica Extension: Descarga masiva de prensa histórica de Prensa Histórica MCU
 
-Extensión para descargar masivamente los ejemplares e imágnes de Prensa Histórica
+Extensión para descargar masivamente los ejemplares e imágenes de Prensa Histórica
 <hr>
 
 ![Alt text](img/legajo.jpg "Legajo decorativo")
