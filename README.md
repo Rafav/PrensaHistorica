@@ -1,4 +1,4 @@
-# HemerotecaBNE Extension: Descarga masiva de prensa histórica de Prensa Histórica MCU
+# Prensa Histórica Extension: Descarga masiva de prensa histórica de Prensa Histórica MCU
 
 Extensión para descargar masivamente los ejemplares e imágnes de Prensa Histórica
 <hr>
