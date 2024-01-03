@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Hemeroteca BNE",
+  "name": "Prensa Histórica",
   "version": "1.0.0",
   "description": "Descarga masiva de Prensa Histórica MCU",
   "permissions": [

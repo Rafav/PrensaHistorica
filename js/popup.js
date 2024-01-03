@@ -18,6 +18,9 @@ document.addEventListener('DOMContentLoaded', function () {
 function startContentScript(currentTab) {
   // Este código se ejecutará en el contexto de la pestaña activa
   // Realiza el scraping aquí y devuelve los resultados
+
+
+  /*
   const scrapedData = {}; // Realiza el scraping y guarda los resultados aquí
 
   //let dbCode ;
@@ -41,6 +44,13 @@ function startContentScript(currentTab) {
     }
   });
   // Envía los resultados de vuelta a popup.js
-  chrome.runtime.sendMessage({ action: 'scrapedData', currentTab, total });
+
+  */
+ 
+  codigo = document.body.innerHTML;
+  console.log(codigo);
+  chrome.runtime.sendMessage({ action: 'scrapedData', codigo});
+
+
 }
 
