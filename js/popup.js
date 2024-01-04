@@ -30,12 +30,14 @@ function startContentScript(currentTab) {
   var numbers = text.match(/\d+/g);
 
   // El último número en el arreglo será el valor que buscas (300 en este caso)
+  
+  var resultados_por_pagina =  numbers[numbers.length - 2];
   var total = numbers[numbers.length - 1];
 
-  console.log('Descargamos un total de '+total+' elementos');
+  console.log('Descargamos un total de '+total+' elementos en páginas de ' +resultados_por_pagina);
 
   codigo = document.body.innerHTML;
-  chrome.runtime.sendMessage({ action: 'scrapedData', codigo, total });
+  chrome.runtime.sendMessage({ action: 'scrapedData', codigo, total , resultados_por_pagina});
 
 
 }

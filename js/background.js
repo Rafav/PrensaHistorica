@@ -18,6 +18,7 @@ function descargarPDFS(bodyHtml) {
     var url_pdf = url_base_descarga + match[1];
     console.log('Descargo pdf ' + url_pdf);
     chrome.downloads.download({ url: url_pdf });
+
   }
 }
 
@@ -103,7 +104,7 @@ function descargarObjetosDigitales(urlObjetosDigitales, path) {
 
 
 function localizaObjetosDigitales(bodyHtml) {
-
+  console.log('localizamos objetos');
 
   // Expresión regular para encontrar enlaces con el texto 'Objetos digitales' (permitiendo espacios en blanco)
   var regex = /<a\s+[^>]*href="([^"]+)"[^>]*>\s*Objetos digitales\s*<\/a>/g;
@@ -128,8 +129,8 @@ function localizaObjetosDigitales(bodyHtml) {
     }
   }
 
-  //console.log("hrefs:", hrefs);
-  //console.log("paths:", paths);
+  console.log("hrefs:", hrefs);
+  console.log("paths:", paths);
 }
 
 
@@ -141,62 +142,85 @@ function bajaPagina(bodyHtml) {
 
 }
 
-function bajarPaginas(bodyHtml, total) {
+function bajarPaginas(bodyHtml, total, resultados_por_pagina) {
 
-  //bajamos la primera página
+  //Bajamos la primera página
   console.log('Bajamos la primera página');
   bajaPagina(bodyHtml);
 
+  var url_paginador;
+
+  //TENEMOS DISTINTAS PAGINAS DE RESULTADOS
+  //CALENDARIO  EJEMPLO:   https://prensahistorica.mcu.es/es/publicaciones/listar_numeros.do?tipo_busqueda=rangofechas&busq_idPublicacion=1000682&busq_fechaInicial=01%2F07%2F1921&busq_fechaFinal=30%2F09%2F1921&submit=Buscar&posicion
+
+  var regex = /(publicaciones\/listar_numeros\.do\?[^"]+posicion=)/g;
+  var urls = [];
+  var match;
+
+  // Busca coincidencias con la expresión regular
+  match = regex.exec(bodyHtml);
+  if (match) {
+    url_paginador = url_base_descarga + (match[1].replace(/&amp;/g, '&'));
+    console.log(url_paginador);
+  }
+  else {
+    console.log('No se encontró paginador de CALENDARIO');
+  }
+
+  //BUSCO POR RESULTADOS DE BUSQUEDA EJEMPLO https://prensahistorica.mcu.es/es/consulta/resultados_ocr.do?general_ocr=on&id=19197&tipoResultados=PAG&posicion=51
+  var regex = /general_ocr=on\&amp\;id=(\d*)/;
+  var match = bodyHtml.match(regex);
+
+  if (match) {
+    var primerId = match[1]; // Captura el primer valor de 'id'
+    url_paginador = 'https://prensahistorica.mcu.es/es/consulta/resultados_ocr.do?general_ocr=on&id=' + primerId + '&tipoResultados=PAG&posicion=';
+    console.log(url_paginador);
+  }
+  else {
+    console.log('No se encontró paginador de RESULTADOS');
+  }
+
 
   //generamos la url de las páginas siguientes 
-  if (total > elementosPorPagina) {
+ 
+  if ( parseInt(total,10)> parseInt(resultados_por_pagina,10)) {
+    console.log('Bajamos la página 2 y siguientes');
+    //Bajamos de la página 2 en adelante, la primera siempre se descarga
 
-    // Expresión regular para encontrar enlaces y capturar el valor del primer match del campo 'id'
-    var regex = /general_ocr=on\&amp\;id=(\d*)/;
-    var match = bodyHtml.match(regex);
+    var pagina_actual = 2;
+    var total_paginas = Math.ceil(total / resultados_por_pagina);
+    
+    while (pagina_actual <= total_paginas) {
 
-    if (match) {
-      var primerId = match[1]; // Captura el primer valor de 'id'
+      console.log('Bajamos la página ' + pagina_actual);
+      //generamos la URL
 
-      //console.log("Primer ID encontrado:", primerId);
+      var posicion = (pagina_actual - 1) * resultados_por_pagina + 1;
+      var pagina_siguiente = url_paginador + posicion;
 
-      //Bajamos de la página 2 en adelante, la primera siempre se descarga
+      console.log('Pagina descarga '+ pagina_siguiente);
+      //procesamos
 
-      var pagina_actual = 2;
-      var total_paginas = Math.round(total / elementosPorPagina);
+      fetch(pagina_siguiente)
+        .then(response => response.text())  // Convertir la respuesta en texto
+        .then(texto => {
+          var texto_sin_ampersand = texto.replace(/&amp;/g, '&');
+          bajaPagina(texto_sin_ampersand);
+        });
 
-      while (pagina_actual <= total_paginas) {
+      //actualizamos iterador , pagina_actual
+      pagina_actual++;
 
-        console.log('Bajamos la página ' + pagina_actual);
-        //generamos la URL
-
-        var posicion = (pagina_actual - 1) * elementosPorPagina + 1;
-        var newUrl = `https://prensahistorica.mcu.es/es/consulta/resultados_ocr.do?general_ocr=on&id=${primerId}&tipoResultados=PAG&posicion=${posicion}`;
-
-        console.log(newUrl);
-        //procesamos
-        fetch(newUrl)
-          .then(response => response.text())  // Convertir la respuesta en texto
-          .then(texto => {
-            var texto_sin_ampersand = texto.replace(/&amp;/g, '&');
-            bajaPagina(texto_sin_ampersand);
-          });
-        //actualizamos iterador , pagina_actual
-        pagina_actual++;
-
-      }
-
-    } else {
-      console.log("No se encontró un ID en el formato esperado.");
     }
   }
 }
 
 
+
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.action === 'scrapedData') {
 
-    bajarPaginas(request.codigo, request.total);
+    bajarPaginas(request.codigo, request.total, request.resultados_por_pagina);
 
   }
 });
