@@ -20,36 +20,22 @@ function startContentScript(currentTab) {
   // Realiza el scraping aquí y devuelve los resultados
 
 
-  /*
-  const scrapedData = {}; // Realiza el scraping y guarda los resultados aquí
+  // Selecciona el elemento por su clase
+  var element = document.querySelector('.nav_descrip');
 
-  //let dbCode ;
-  let total;
+  // Extrae el texto del elemento
+  var text = element.innerText;
 
-  console.log(currentTab);
+  // Utiliza una expresión regular para encontrar números en el texto
+  var numbers = text.match(/\d+/g);
 
+  // El último número en el arreglo será el valor que buscas (300 en este caso)
+  var total = numbers[numbers.length - 1];
 
-  var spanElementos = document.querySelectorAll('span.mr-2');
+  console.log('Descargamos un total de '+total+' elementos');
 
-  Array.from(spanElementos).forEach(function (spanElemento) {
-    // Comprobar si el elemento <span> tiene únicamente la clase 'mr-2'
-    if (spanElemento.className.trim() === 'mr-2') {
-      // Buscar dentro de este <span> el elemento <strong>
-      var resultadoElemento = spanElemento.querySelector('strong');
-
-      if (resultadoElemento) {
-        total = resultadoElemento.textContent.trim();
-        console.log("Número de resultados:", total);
-      }
-    }
-  });
-  // Envía los resultados de vuelta a popup.js
-
-  */
- 
   codigo = document.body.innerHTML;
-  console.log(codigo);
-  chrome.runtime.sendMessage({ action: 'scrapedData', codigo});
+  chrome.runtime.sendMessage({ action: 'scrapedData', codigo, total });
 
 
 }

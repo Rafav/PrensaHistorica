@@ -1,9 +1,7 @@
 // background.js
 
 const url_base_descarga = "https://prensahistorica.mcu.es/es/";
-
-
-const elementosPorPagina = 10;
+const elementosPorPagina = 50;
 
 
 function descargarPDFS(bodyHtml) {
@@ -18,11 +16,9 @@ function descargarPDFS(bodyHtml) {
     // Añade el href a la lista
     hrefs.push(match[1]);
     var url_pdf = url_base_descarga + match[1];
+    console.log('Descargo pdf ' + url_pdf);
     chrome.downloads.download({ url: url_pdf });
   }
-
-  console.log("Enlaces PDF encontrados:", hrefs);
-
 }
 
 
@@ -30,14 +26,12 @@ function descargarJPG(bodyHtml) {
 
   // Expresión regular para encontrar enlaces que comiencen con 'img'
   var regex = /<a\s+id="img\d+"\s+href="([^"]+)"[^>]*>([^<]+)<\/a>/g;
-  var newUrls = [];
   var match;
 
   // Busca coincidencias con la expresión regular
   while ((match = regex.exec(bodyHtml)) !== null) {
     // Extrae el href del enlace actual
     var href = match[1];
-
     // Extrae el texto del enlace actual
     var linkText = match[2].trim();
 
@@ -52,49 +46,16 @@ function descargarJPG(bodyHtml) {
     // Si ambos, pathValue y pageNumber, están presentes, construye el nuevo enlace
     if (pathValue && pageNumber) {
       var newUrl = `https://prensahistorica.mcu.es/es/catalogo_imagenes/iniciar_descarga.do?interno=S&posicion=${pageNumber}&path=${pathValue}&formato=Imagen%20JPG&tipoDescarga=seleccion&rango=actual`;
-      newUrls.push(newUrl);
+      console.log('Bajo el JPG ' + newUrl);
       chrome.downloads.download({ url: newUrl });
 
     }
   }
-
-  console.log(newUrls);
-
 }
 
 
 
-
 function descargarObjetosDigitales(urlObjetosDigitales, path) {
-
-  /*
-    fetch(url_base_descarga+urlObjetosDigitales, {
-      method: 'GET', // o 'POST' según sea necesario
-      redirect: 'manual' // Esto evita que el navegador siga la redirección automáticamente
-    })
-      .then(response => {
-        if (response.type === 'opaqueredirect') {
-          // La respuesta es una redirección; captura la URL de redirección
-          let redirectedUrl = response.url;
-          console.log('URL de redirección:', redirectedUrl);
-          // Aquí puedes realizar acciones adicionales con la URL de redirección
-        } else {
-          // Manejo normal de la respuesta
-          return response.text(); // o response.json() según el tipo de respuesta
-        }
-      })
-      .then(data => {
-        // Haz algo con los datos (si no es una redirección)
-        console.log(data);
-      })
-      .catch(error => {
-        console.error('Error en la petición fetch:', error);
-      });
-  
-  
-  
-    */
-
 
   fetch(url_base_descarga + urlObjetosDigitales)
     .then(response => response.text())  // Convertir la respuesta en texto
@@ -104,28 +65,28 @@ function descargarObjetosDigitales(urlObjetosDigitales, path) {
       var match = texto.match(regex);
 
       if (match) {
-        var primerNumero = match[1]; 
+        var primerNumero = match[1];
 
         console.log("Primer número:", primerNumero);
 
         var regex = /<a href='([^']+posicion=(\d+)&amp;[^']+)'/g;
-        
-var hrefs = [];
-var matchSiguiente;
 
-// Busca coincidencias con la expresión regular
-while ((matchSiguiente = regex.exec(texto)) !== null) {
-    // Añade el href a la lista, reemplazando '&amp;' por '&' para corregir la codificación HTML
-    hrefs.push(matchSiguiente[1].replace(/&amp;/g, '&'));
-    hrefs.push(matchSiguiente[2].replace(/&amp;/g, '&'));
+        var hrefs = [];
+        var matchSiguiente;
 
-    var newUrl = `https://prensahistorica.mcu.es/es/catalogo_imagenes/iniciar_descarga.do?interno=S&posicion=${matchSiguiente[2]}&path=${path}&formato=Imagen%20JPG&tipoDescarga=seleccion&rango=actual`;
-      
-    chrome.downloads.download({ url: newUrl});
-}
+        // Busca coincidencias con la expresión regular
+        while ((matchSiguiente = regex.exec(texto)) !== null) {
+          // Añade el href a la lista, reemplazando '&amp;' por '&' para corregir la codificación HTML
+          hrefs.push(matchSiguiente[1].replace(/&amp;/g, '&'));
+          hrefs.push(matchSiguiente[2].replace(/&amp;/g, '&'));
 
-console.log(hrefs); // Imprime los hrefs encontrados
-      
+          var newUrl = `https://prensahistorica.mcu.es/es/catalogo_imagenes/iniciar_descarga.do?interno=S&posicion=${matchSiguiente[2]}&path=${path}&formato=Imagen%20JPG&tipoDescarga=seleccion&rango=actual`;
+
+          chrome.downloads.download({ url: newUrl });
+        }
+
+        console.log(hrefs); // Imprime los hrefs encontrados
+
 
       } else {
         console.log("No se encontró el número en el formato esperado o el elemento no coincide.");
@@ -133,7 +94,7 @@ console.log(hrefs); // Imprime los hrefs encontrados
 
       //descargamos la primera imagen
       var newUrl = `https://prensahistorica.mcu.es/es/catalogo_imagenes/iniciar_descarga.do?interno=S&posicion=${primerNumero}&path=${path}&formato=Imagen%20JPG&tipoDescarga=seleccion&rango=actual`;
-      console.log(newUrl);
+      //console.log(newUrl);
       chrome.downloads.download({ url: newUrl });
 
     })
@@ -141,51 +102,8 @@ console.log(hrefs); // Imprime los hrefs encontrados
 }
 
 
-
-/*
-// Expresión regular para encontrar enlaces con 'id' que comienza con 'img' y que contienen 'Página -'
-var regex = /<a\s+id="img\d+"\s+href="([^"]+)"[^>]*>\s*Página -\s*<\/a>/g;
-var newUrls = [];
-var match;
-
-// Busca coincidencias con la expresión regular
-while ((match = regex.exec(bodyHtml)) !== null) {
-  // Extrae el href del enlace actual
-  var href = match[1];
-  console.log(href);
-
-  // Utiliza una expresión regular para extraer el valor de 'path'
-  var pathMatch = href.match(/path=(\d+)/);
-  var pathValue = pathMatch ? pathMatch[1] : null;
-
-  // Si pathValue está presente, construye el nuevo enlace
-  // No se extrae el número de página ya que el texto es 'Página -'
-  if (pathValue) {
-    //hay que seguir el enlace para obtener la posicion en el documento    
-    //fetch(url_base_descarga+href,{
-    fetch('https://prensahistorica.mcu.es/es/catalogo_imagenes/grupo.do?path=735193&texto_busqueda=travesedo', {
-      redirect: "follow"
-    })
-      .then(response => response.text())  // Convertir la respuesta en texto
-      .then(texto => {
-        console.log(texto);
-        console.log(href);
-      })
-  }
-}
-
-console.log(newUrls);
-}
-
-*/
-
-
-
-
-
 function localizaObjetosDigitales(bodyHtml) {
 
-  // Expresión regular para encontrar enlaces con el texto 'Objetos digitales', permitiendo espacios antes y después
 
   // Expresión regular para encontrar enlaces con el texto 'Objetos digitales' (permitiendo espacios en blanco)
   var regex = /<a\s+[^>]*href="([^"]+)"[^>]*>\s*Objetos digitales\s*<\/a>/g;
@@ -210,59 +128,76 @@ function localizaObjetosDigitales(bodyHtml) {
     }
   }
 
-  console.log("hrefs:", hrefs);
-  console.log("paths:", paths);
+  //console.log("hrefs:", hrefs);
+  //console.log("paths:", paths);
 }
 
 
-function bajarPagina(url_pagina, numero_pagina) {
-  //generamos la url de la página correspondiente
+function bajaPagina(bodyHtml) {
+
+  descargarPDFS(bodyHtml);
+  descargarJPG(bodyHtml);
+  localizaObjetosDigitales(bodyHtml);
+
+}
+
+function bajarPaginas(bodyHtml, total) {
+
+  //bajamos la primera página
+  console.log('Bajamos la primera página');
+  bajaPagina(bodyHtml);
 
 
-  const url = new URL(url_pagina);
-  var iteracion = numero_pagina * elementosPorPagina;
+  //generamos la url de las páginas siguientes 
+  if (total > elementosPorPagina) {
 
-  // Modificar el valor del parámetro 's' que sirve de paginador
-  url.searchParams.set('s', iteracion);
+    // Expresión regular para encontrar enlaces y capturar el valor del primer match del campo 'id'
+    var regex = /general_ocr=on\&amp\;id=(\d*)/;
+    var match = bodyHtml.match(regex);
 
-  // Devolver la URL modificada
-  console.log(numero_pagina * elementosPorPagina);
+    if (match) {
+      var primerId = match[1]; // Captura el primer valor de 'id'
 
-  console.log('Bajamos ' + url.toString());
+      //console.log("Primer ID encontrado:", primerId);
 
-  fetch(url.toString())
-    .then(response => response.text())  // Convertir la respuesta en texto
-    .then(texto => {
-      // Usamos una expresión regular para encontrar todos los enlaces que contienen 'pdf'
-      const regex = /href="([^"]+\.pdf)/g;
-      let enlaces = [];
-      let match;
+      //Bajamos de la página 2 en adelante, la primera siempre se descarga
 
-      while ((match = regex.exec(texto)) !== null) {
-        enlaces.push(match[1]);
-        let url_pdf = url_base_descarga + match[1];
-        console.log(url_pdf);
-        chrome.downloads.download({ url: url_pdf });
+      var pagina_actual = 2;
+      var total_paginas = Math.round(total / elementosPorPagina);
+
+      while (pagina_actual <= total_paginas) {
+
+        console.log('Bajamos la página ' + pagina_actual);
+        //generamos la URL
+
+        var posicion = (pagina_actual - 1) * elementosPorPagina + 1;
+        var newUrl = `https://prensahistorica.mcu.es/es/consulta/resultados_ocr.do?general_ocr=on&id=${primerId}&tipoResultados=PAG&posicion=${posicion}`;
+
+        console.log(newUrl);
+        //procesamos
+        fetch(newUrl)
+          .then(response => response.text())  // Convertir la respuesta en texto
+          .then(texto => {
+            var texto_sin_ampersand = texto.replace(/&amp;/g, '&');
+            bajaPagina(texto_sin_ampersand);
+          });
+        //actualizamos iterador , pagina_actual
+        pagina_actual++;
+
       }
-      console.log("Enlaces PDF encontrados:", enlaces);
-    })
-    .catch(error => {
-      console.error("Error al obtener la página:", error);
-    });
 
+    } else {
+      console.log("No se encontró un ID en el formato esperado.");
+    }
+  }
 }
 
 
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.action === 'scrapedData') {
 
-    descargarPDFS(request.codigo);
-    descargarJPG(request.codigo);
-    localizaObjetosDigitales(request.codigo);
-    //bajamos pagina a pagina
+    bajarPaginas(request.codigo, request.total);
 
-    //bajarPagina(request.currentTab, paginaActual);
-    //paginaActual++;
   }
 });
 
