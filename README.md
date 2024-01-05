@@ -1,4 +1,4 @@
-# Prensa Histórica Extension: Descarga masiva de prensa histórica de Prensa Histórica MCU
+# Prensa Histórica Extension: Descarga masiva de Prensa Histórica MCU
 
 Extensión para descargar masivamente los ejemplares e imágenes de Prensa Histórica
 <hr>
