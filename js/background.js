@@ -57,6 +57,7 @@ function descargarJPG(bodyHtml) {
 
 function descargarObjetosDigitales(urlObjetosDigitales, path) {
 
+  console.log('Descargamos objetos '+urlObjetosDigitales);
   fetch(url_base_descarga + urlObjetosDigitales)
     .then(response => response.text())  // Convertir la respuesta en texto
     .then(texto => {
@@ -71,7 +72,7 @@ function descargarObjetosDigitales(urlObjetosDigitales, path) {
 
         //descargamos la primera imagen
         let newUrl = `https://prensahistorica.mcu.es/es/catalogo_imagenes/iniciar_descarga.do?interno=S&posicion=${primerNumero}&path=${path}&formato=Imagen%20JPG&tipoDescarga=seleccion&rango=actual`;
-        console.log('El primer objeto digital es '+ newUrl);
+        console.log('El primer objeto digital es ' + newUrl);
         chrome.downloads.download({ url: newUrl });
 
         //Buscamos más ocurrencias.
@@ -110,7 +111,9 @@ function localizaObjetosDigitales(bodyHtml) {
   console.log('localizamos objetos');
 
   // Expresión regular para encontrar enlaces con el texto 'Objetos digitales' (permitiendo espacios en blanco)
-  let regex = /<a\s+[^>]*href="([^"]+)"[^>]*>\s*Objetos digitales\s*<\/a>/g;
+  //let regex = /<a\s+[^>]*href="([^"]+)"[^>]*>\s*Objetos digitales\s*<\/a>/g;
+  
+  let regex = /<a\s+[^>]*href="([^"]+)"[^>]*>\s*(Objetos digitales|Copia en JPEG)\s*<\/a>/g; 
   let hrefs = [];
   let paths = [];
   let match;
@@ -139,50 +142,59 @@ function localizaObjetosDigitales(bodyHtml) {
 
 function bajaPagina(bodyHtml) {
 
-  descargarPDFS(bodyHtml);
-  descargarJPG(bodyHtml);
-  localizaObjetosDigitales(bodyHtml);
+    descargarPDFS(bodyHtml);
+    descargarJPG(bodyHtml);
+    localizaObjetosDigitales(bodyHtml);
 
 }
 
-function bajarPaginas(bodyHtml, total, resultados_por_pagina) {
 
-  //Bajamos la primera página
-  console.log('Bajamos la primera página');
-  bajaPagina(bodyHtml);
-
-  let url_paginador;
-
-  //TENEMOS DISTINTAS PAGINAS DE RESULTADOS
-  //CALENDARIO  EJEMPLO:   https://prensahistorica.mcu.es/es/publicaciones/listar_numeros.do?tipo_busqueda=rangofechas&busq_idPublicacion=1000682&busq_fechaInicial=01%2F07%2F1921&busq_fechaFinal=30%2F09%2F1921&submit=Buscar&posicion
-
+function url_paginas_calendario(bodyHtml) {
   let regex = /(publicaciones\/listar_numeros\.do\?[^"]+posicion=)/g;
-  let urls = [];
   let match;
+  let url_paginador;
 
   // Busca coincidencias con la expresión regular
   match = regex.exec(bodyHtml);
   if (match) {
     url_paginador = url_base_descarga + (match[1].replace(/&amp;/g, '&'));
-    console.log(url_paginador);
+    console.log('CALENDARIO ' + url_paginador);
   }
   else {
     console.log('No se encontró paginador de CALENDARIO');
   }
 
-  //BUSCO POR RESULTADOS DE BUSQUEDA EJEMPLO https://prensahistorica.mcu.es/es/consulta/resultados_ocr.do?general_ocr=on&id=19197&tipoResultados=PAG&posicion=51
-  regex = /general_ocr=on\&amp\;id=(\d*)/;
+  return url_paginador;
+
+}
+
+
+function url_paginas_resultados(bodyHtml) {
+
+
+  let regex = /general_ocr=on\&amp\;id=(\d*)/;
+  let match;
+  let url_paginador;
+
   match = bodyHtml.match(regex);
 
   if (match) {
     let primerId = match[1]; // Captura el primer valor de 'id'
     url_paginador = 'https://prensahistorica.mcu.es/es/consulta/resultados_ocr.do?general_ocr=on&id=' + primerId + '&tipoResultados=PAG&posicion=';
-    console.log(url_paginador);
+    console.log('RESULTADOS ' + url_paginador);
   }
   else {
     console.log('No se encontró paginador de RESULTADOS');
   }
+  return url_paginador;
+}
 
+
+function url_paginas_resultados_filtrados(bodyHtml) {
+
+  let regex = /general_ocr=on\&amp\;id=(\d*)/;
+  let match;
+  let url_paginador;
 
   //BUSCO POR RESULTADOS DE BUSQUEDA PERO FILTRADOS - RESTRINGIDOS- EJEMPLO: https://prensahistorica.mcu.es/es/consulta/resultados_busqueda_restringida.do?idOrigen=20265&tipoResultados=PAG&descrip_pertenece=El+Cant%C3%A1brico+%3A+diario+de+la+ma%C3%B1ana&id=20281&posicion=51
 
@@ -194,44 +206,67 @@ function bajarPaginas(bodyHtml, total, resultados_por_pagina) {
   match = regex.exec(bodyHtml);
   if (match) {
     url_paginador = url_base_descarga + (match[1].replace(/&amp;/g, '&'));
-    console.log(url_paginador);
+    console.log('RESULTADOS RESTRINGIDOS ' + url_paginador);
   }
   else {
     console.log('No se encontró paginador de RESULTADOS RESTRINGIDOS');
   }
+  return url_paginador;
+}
 
-  //generamos la url de las páginas siguientes 
+function bajarPaginas(bodyHtml, total, resultados_por_pagina, todas_las_paginas) {
 
-  if (parseInt(total, 10) > parseInt(resultados_por_pagina, 10)) {
-    console.log('Bajamos la página 2 y siguientes');
-    //Bajamos de la página 2 en adelante, la primera siempre se descarga
+  let url_paginador;
+  url_paginador = url_paginas_calendario(bodyHtml) || url_paginas_resultados(bodyHtml) || url_paginas_resultados_filtrados(bodyHtml) || null;
+  console.log('El paginador devuelve   ' + url_paginador);
 
-    let pagina_actual = 2;
-    let total_paginas = Math.ceil(total / resultados_por_pagina);
 
-    while (pagina_actual <= total_paginas) {
+  if (url_paginador && todas_las_paginas) {
+    //generamos la url de las sucesivas páginas  
 
-      console.log('Bajamos la página ' + pagina_actual);
-      //generamos la URL
+    if (parseInt(total, 10) > parseInt(resultados_por_pagina, 10)) {
+      console.log('Bajamos la página 2 y siguientes');
+      //Bajamos de la página 2 en adelante, la primera siempre se descarga
 
-      let posicion = (pagina_actual - 1) * resultados_por_pagina + 1;
-      let pagina_siguiente = url_paginador + posicion;
+      let pagina_actual = 1;
+      let total_paginas = Math.ceil(total / resultados_por_pagina);
 
-      console.log('Pagina descarga ' + pagina_siguiente);
-      //procesamos
+      while (pagina_actual <= total_paginas) {
 
-      fetch(pagina_siguiente)
-        .then(response => response.text())  // Convertir la respuesta en texto
-        .then(texto => {
-          let texto_sin_ampersand = texto.replace(/&amp;/g, '&');
-          bajaPagina(texto_sin_ampersand);
-        });
+        console.log('Bajamos la página ' + pagina_actual);
+        //generamos la URL
 
-      //actualizamos iterador , pagina_actual
-      pagina_actual++;
+        let posicion = (pagina_actual - 1) * resultados_por_pagina + 1;
+        let pagina_siguiente = url_paginador + posicion;
 
+        console.log('Pagina descarga ' + pagina_siguiente);
+        //procesamos
+
+        fetch(pagina_siguiente)
+          .then(response => response.text())  // Convertir la respuesta en texto
+          .then(texto => {
+            let texto_sin_ampersand = texto.replace(/&amp;/g, '&');
+            bajaPagina(texto_sin_ampersand);
+          });
+
+        //actualizamos iterador , pagina_actual
+        pagina_actual++;
+
+      }
     }
   }
+  else {
+
+    //Bajamos la primera página  en dos casos
+    //CASO 1: el usuario solo quiere la página actual
+    //CASO 2: el usuario quiere todas las páginas pero solo hay 1
+
+
+    console.log('Bajamos solo la página actual');
+    bajaPagina(bodyHtml);
+
+  }
+
 }
 
 
@@ -239,7 +274,8 @@ function bajarPaginas(bodyHtml, total, resultados_por_pagina) {
 chrome.runtime.onMessage.addListener(function (request, sender, sendResponse) {
   if (request.action === 'scrapedData') {
 
-    bajarPaginas(request.codigo, request.total, request.resultados_por_pagina);
+
+    bajarPaginas(request.codigo, request.total, request.resultados_por_pagina, request.todas_las_paginas);
 
   }
 });
