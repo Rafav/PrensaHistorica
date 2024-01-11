@@ -219,14 +219,15 @@ function bajarPaginas(bodyHtml, total, resultados_por_pagina, todas_las_paginas)
   let url_paginador;
   url_paginador = url_paginas_calendario(bodyHtml) || url_paginas_resultados(bodyHtml) || url_paginas_resultados_filtrados(bodyHtml) || null;
   console.log('El paginador devuelve   ' + url_paginador);
+  console.log('Todas las páginas tiene el valor de   ' + todas_las_paginas);
 
 
   if (url_paginador && todas_las_paginas) {
     //generamos la url de las sucesivas páginas  
 
-    if (parseInt(total, 10) > parseInt(resultados_por_pagina, 10)) {
-      console.log('Bajamos la página 2 y siguientes');
-      //Bajamos de la página 2 en adelante, la primera siempre se descarga
+    //if (parseInt(total, 10) > parseInt(resultados_por_pagina, 10)) {
+      console.log('Bajamos la página 1 y siguientes');
+      //Bajamos de la página 1 en adelante, la primera siempre se descarga
 
       let pagina_actual = 1;
       let total_paginas = Math.ceil(total / resultados_por_pagina);
@@ -253,7 +254,7 @@ function bajarPaginas(bodyHtml, total, resultados_por_pagina, todas_las_paginas)
         pagina_actual++;
 
       }
-    }
+   // }
   }
   else {
 
@@ -263,7 +264,7 @@ function bajarPaginas(bodyHtml, total, resultados_por_pagina, todas_las_paginas)
 
 
     console.log('Bajamos solo la página actual');
-    bajaPagina(bodyHtml);
+    bajaPagina(bodyHtml.replace(/&amp;/g, '&'));
 
   }
 
